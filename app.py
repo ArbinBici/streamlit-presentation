@@ -3,70 +3,13 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.datasets import load_diabetes, load_boston
+from sklearn.datasets import load_diabetes
 
 # ---------------------------------#
 # Page layout
-## Page expands to full width
-st.set_page_config(page_title="The Machine Learning App")
-
-# ---------------------------------#
-# Model building
-def build_model(df):
-    X = df.iloc[:, :-1]  # Using all column except for the last column as X
-    Y = df.iloc[:, -1]  # Selecting the last column as Y
-
-    # Data splitting
-    X_train, X_test, Y_train, Y_test = train_test_split(
-        X, Y, test_size=(100 - split_size) / 100
-    )
-
-    st.markdown("**1.2. Data splits**")
-    st.write("Training set")
-    st.info(X_train.shape)
-    st.write("Test set")
-    st.info(X_test.shape)
-
-    st.markdown("**1.3. Variable details**:")
-    st.write("X variable")
-    st.info(list(X.columns))
-    st.write("Y variable")
-    st.info(Y.name)
-
-    rf = RandomForestRegressor(
-        n_estimators=parameter_n_estimators,
-        random_state=parameter_random_state,
-        max_features=parameter_max_features,
-        criterion=parameter_criterion,
-        min_samples_split=parameter_min_samples_split,
-        min_samples_leaf=parameter_min_samples_leaf,
-        bootstrap=parameter_bootstrap,
-        oob_score=parameter_oob_score,
-        n_jobs=parameter_n_jobs,
-    )
-    rf.fit(X_train, Y_train)
-
-    st.subheader("2. Model Performance")
-
-    st.markdown("**2.1. Training set**")
-    Y_pred_train = rf.predict(X_train)
-    st.write("Coefficient of determination ($R^2$):")
-    st.info(r2_score(Y_train, Y_pred_train))
-
-    st.write("Error (MSE or MAE):")
-    st.info(mean_squared_error(Y_train, Y_pred_train))
-
-    st.markdown("**2.2. Test set**")
-    Y_pred_test = rf.predict(X_test)
-    st.write("Coefficient of determination ($R^2$):")
-    st.info(r2_score(Y_test, Y_pred_test))
-
-    st.write("Error (MSE or MAE):")
-    st.info(mean_squared_error(Y_test, Y_pred_test))
-
-    st.subheader("3. Model Parameters")
-    st.write(rf.get_params())
-
+st.set_page_config(
+    page_title="The Machine Learning App", initial_sidebar_state="collapsed"
+)
 
 # ---------------------------------#
 st.write(
@@ -76,34 +19,91 @@ In this implementation, the *RandomForestRegressor()* function is used in this a
 Try adjusting the hyperparameters!
 """
 )
+get_dataset = st.button("Press to use Example Dataset")
+
+tab1, tab2, tab3 = st.tabs(["Dataset", "Performance", "Parameters"])
+# ---------------------------------#
+# Model building
+def build_model_RF(df, params):
+    # Features and target are taken from an already prepared dataset.
+    X = df.iloc[:, :-1]  # Using all column except for the last column as X
+    Y = df.iloc[:, -1]  # Selecting the last column as Y
+
+    # Data splitting
+    X_train, X_test, Y_train, Y_test = train_test_split(
+        X, Y, test_size=(100 - params["split_size"]) / 100
+    )
+    with tab1:
+        st.markdown("#### **Data Splits**")
+        st.markdown("_Training Set:_")
+        st.info(X_train.shape)
+        st.markdown("_Test Set:_")
+        st.info(X_test.shape)
+
+        st.markdown("#### **Variable Details**")
+        st.markdown("_X Variables:_")
+        st.info(list(X.columns))
+        st.markdown("_Y Variable:_")
+        st.info(Y.name)
+
+    rf = RandomForestRegressor(
+        n_estimators=params["parameter_n_estimators"],
+        random_state=params["parameter_random_state"],
+        max_features=params["parameter_max_features"],
+        criterion=params["parameter_criterion"],
+        min_samples_split=params["parameter_min_samples_split"],
+        min_samples_leaf=params["parameter_min_samples_leaf"],
+        bootstrap=params["parameter_bootstrap"],
+        oob_score=params["parameter_oob_score"],
+        n_jobs=params["parameter_n_jobs"],
+    )
+    rf.fit(X_train, Y_train)
+    criterion_choose = params["parameter_criterion_choose"]
+    with tab2:
+        st.markdown("#### **Training Set**")
+        Y_pred_train = rf.predict(X_train)
+        st.markdown("*Coefficient of determination ($R^2$):*")
+        st.info(r2_score(Y_train, Y_pred_train))
+
+        st.markdown(f"*Error ({criterion_choose}):*")
+        st.info(mean_squared_error(Y_train, Y_pred_train))
+
+        st.markdown("#### **Test Set**")
+        Y_pred_test = rf.predict(X_test)
+        st.markdown("*Coefficient of determination ($R^2$):*")
+        st.info(r2_score(Y_test, Y_pred_test))
+
+        st.markdown(f"*Error ({criterion_choose}):*")
+        st.info(mean_squared_error(Y_test, Y_pred_test))
+    with tab3:
+        st.markdown("#### Model Parameters")
+        st.write(rf.get_params())
+
 
 # ---------------------------------#
-# Sidebar - Collects user input features into dataframe
-with st.sidebar:
-    st.write("1. Upload your CSV data")
-    uploaded_file = st.sidebar.file_uploader("Upload your input CSV file", type=["csv"])
+def LR_hyperparams():
+    st.write("hi")
 
-# Sidebar - Specify parameter settings
-with st.sidebar:
-    st.write("2. Set Parameters")
+
+def RF_hyperparams():
+    st.markdown("### Set Parameters")
     split_size = st.sidebar.slider(
-        "Data split ratio (% for Training Set)", 10, 90, 80, 5
+        "Data split ratio (% for Training Set)", 10, 90, 80, 5, key=1
     )
-
-with st.sidebar:
-    st.write("2.1. Learning Parameters")
+    st.markdown("### Learning Parameters")
     parameter_n_estimators = st.sidebar.slider(
-        "Number of estimators (n_estimators)", 0, 1000, 100, 100
+        "Number of estimators (n_estimators)", 1, 1000, 100, 1, key=2
     )
-    parameter_max_features = st.sidebar.select_slider(
-        "Max features (max_features)", options=["sqrt", "log2"]
+    parameter_max_features = st.radio(
+        "Max features (max_features)", options=["sqrt", "log2"], key=3
     )
     parameter_min_samples_split = st.sidebar.slider(
         "Minimum number of samples required to split an internal node (min_samples_split)",
-        1,
+        2,
         10,
         2,
         1,
+        key=4,
     )
     parameter_min_samples_leaf = st.sidebar.slider(
         "Minimum number of samples required to be at a leaf node (min_samples_leaf)",
@@ -111,57 +111,80 @@ with st.sidebar:
         10,
         2,
         1,
+        key=5,
     )
-
-with st.sidebar:
-    st.write("2.2. General Parameters")
+    st.markdown("### General Parameters")
     parameter_random_state = st.sidebar.slider(
-        "Seed number (random_state)", 0, 1000, 42, 1
+        "Seed number (random_state)", 0, 1000, 42, 1, key=6
     )
-    parameter_criterion = st.sidebar.select_slider(
-        "Performance measure (criterion)", options=["squared_error", "mae"]
+    parameter_criterion_choose = st.radio(
+        "Performance measure (criterion)",
+        options=["Mean Squared Error", "Mean Absolute Error"],
+        key=7,
     )
-    parameter_bootstrap = st.sidebar.select_slider(
-        "Bootstrap samples when building trees (bootstrap)", options=[True, False]
+    parameter_criterion = (
+        "squared_error"
+        if parameter_criterion_choose == "Mean Squared Error"
+        else "absolute_error"
     )
-    parameter_oob_score = st.sidebar.select_slider(
+    parameter_bootstrap = st.radio(
+        "Bootstrap samples when building trees (bootstrap)",
+        options=[True, False],
+        key=8,
+    )
+    parameter_oob_score = st.radio(
         "Whether to use out-of-bag samples to estimate the R^2 on unseen data (oob_score)",
         options=[False, True],
+        key=9,
     )
-    parameter_n_jobs = st.sidebar.select_slider(
-        "Number of jobs to run in parallel (n_jobs)", options=[1, -1]
+    parameter_n_jobs = st.radio(
+        "Number of jobs to run in parallel (n_jobs)", options=[1, -1], key=10
     )
+    params = {
+        "split_size": split_size,
+        "parameter_n_estimators": parameter_n_estimators,
+        "parameter_max_features": parameter_max_features,
+        "parameter_min_samples_split": parameter_min_samples_split,
+        "parameter_min_samples_leaf": parameter_min_samples_leaf,
+        "parameter_random_state": parameter_random_state,
+        "parameter_criterion_choose": parameter_criterion_choose,
+        "parameter_criterion": parameter_criterion,
+        "parameter_bootstrap": parameter_bootstrap,
+        "parameter_oob_score": parameter_oob_score,
+        "parameter_n_jobs": parameter_n_jobs,
+    }
+    return params
+
+
+# Sidebar - Specify parameter settings
+with st.sidebar:
+    model_selection = st.selectbox(
+        "Select the model to train:", ["Linear Regression", "Random Forest"]
+    )
+    if model_selection == "Linear Regression":
+        LR_params = LR_hyperparams()
+        model = 1
+    else:
+        RF_params = RF_hyperparams()
+        model = 2
 
 # ---------------------------------#
 # Main panel
 
 # Displays the dataset
-st.markdown("### 1. Dataset")
-
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
-    st.markdown("**1.1. Glimpse of dataset**")
-    st.write(df)
-    build_model(df)
-else:
-    st.info("Awaiting for CSV file to be uploaded.")
-    if st.button("Press to use Example Dataset"):
+with tab1:
+    if get_dataset:
         # Diabetes dataset
-        # diabetes = load_diabetes()
-        # X = pd.DataFrame(diabetes.data, columns=diabetes.feature_names)
-        # Y = pd.Series(diabetes.target, name='response')
-        # df = pd.concat( [X,Y], axis=1 )
-
-        # st.markdown('The Diabetes dataset is used as the example.')
-        # st.write(df.head(5))
-
-        # Boston housing dataset
-        boston = load_boston()
-        X = pd.DataFrame(boston.data, columns=boston.feature_names)
-        Y = pd.Series(boston.target, name="response")
+        st.markdown("### Dataset")
+        diabetes = load_diabetes()
+        X = pd.DataFrame(diabetes.data, columns=diabetes.feature_names)
+        Y = pd.Series(diabetes.target, name="response")
         df = pd.concat([X, Y], axis=1)
 
-        st.markdown("The Boston housing dataset is used as the example.")
-        st.write(df.head(5))
+        st.markdown("The Diabetes dataset is used as the example.")
+        st.write(df)
 
-        build_model(df)
+        if model == 1:
+            build_model_LR(df)
+        elif model == 2:
+            build_model_RF(df, RF_params)
