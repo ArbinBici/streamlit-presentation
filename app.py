@@ -16,7 +16,7 @@ st.set_page_config(
 st.write(
     """
 # The Machine Learning App
-In this implementation, the *RandomForestRegressor()* function is used in this app for build a regression model using the **Random Forest** algorithm.
+In this implementation, the *RandomForestRegressor()* and *LinearRegression()* functions are used to build a regression model using the **Random Forest** and **Linear Regression** algorithm.
 Try adjusting the hyperparameters!
 """
 )
