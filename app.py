@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
@@ -19,11 +20,58 @@ In this implementation, the *RandomForestRegressor()* function is used in this a
 Try adjusting the hyperparameters!
 """
 )
-get_dataset = st.button("Press to use Example Dataset")
 
 tab1, tab2, tab3 = st.tabs(["Dataset", "Performance", "Parameters"])
 # ---------------------------------#
 # Model building
+def build_model_LR(df, params):
+    # Features and target are taken from an already prepared dataset.
+    X = df.iloc[:, :-1]  # Using all column except for the last column as X
+    Y = df.iloc[:, -1]  # Selecting the last column as Y
+
+    # Data splitting
+    X_train, X_test, Y_train, Y_test = train_test_split(
+        X, Y, test_size=(100 - params["split_size"]) / 100
+    )
+    with tab1:
+        st.markdown("#### **Data Splits**")
+        st.markdown("_Training Set:_")
+        st.info(X_train.shape)
+        st.markdown("_Test Set:_")
+        st.info(X_test.shape)
+
+        st.markdown("#### **Variable Details**")
+        st.markdown("_X Variables:_")
+        st.info(list(X.columns))
+        st.markdown("_Y Variable:_")
+        st.info(Y.name)
+
+    lr = LinearRegression(
+        positive=params["parameter_positive"],
+        n_jobs=params["parameter_n_jobs"],
+    )
+    lr.fit(X_train, Y_train)
+    with tab2:
+        st.markdown("#### **Training Set**")
+        Y_pred_train = lr.predict(X_train)
+        st.markdown("*Coefficient of determination ($R^2$):*")
+        st.info(r2_score(Y_train, Y_pred_train))
+
+        st.markdown(f"*Error (Mean Squared Error):*")
+        st.info(mean_squared_error(Y_train, Y_pred_train))
+
+        st.markdown("#### **Test Set**")
+        Y_pred_test = lr.predict(X_test)
+        st.markdown("*Coefficient of determination ($R^2$):*")
+        st.info(r2_score(Y_test, Y_pred_test))
+
+        st.markdown(f"*Error (Mean Squared Error):*")
+        st.info(mean_squared_error(Y_test, Y_pred_test))
+    with tab3:
+        st.markdown("#### Model Parameters")
+        st.write(lr.get_params())
+
+
 def build_model_RF(df, params):
     # Features and target are taken from an already prepared dataset.
     X = df.iloc[:, :-1]  # Using all column except for the last column as X
@@ -49,7 +97,7 @@ def build_model_RF(df, params):
     rf = RandomForestRegressor(
         n_estimators=params["parameter_n_estimators"],
         random_state=params["parameter_random_state"],
-        max_features=params["parameter_max_features"],
+        max_depth=params["parameter_max_depth"],
         criterion=params["parameter_criterion"],
         min_samples_split=params["parameter_min_samples_split"],
         min_samples_leaf=params["parameter_min_samples_leaf"],
@@ -82,28 +130,41 @@ def build_model_RF(df, params):
 
 # ---------------------------------#
 def LR_hyperparams():
-    st.write("hi")
+    st.markdown("### Set Parameters")
+    split_size = st.sidebar.slider(
+        "Data split ratio (% for Training Set)", 10, 90, 80, 5
+    )
+    st.markdown("### General Parameters")
+    parameter_positive = st.radio(
+        "Force coefficients to be positive (positive)", options=[True, False]
+    )
+    parameter_n_jobs = st.radio(
+        "Number of jobs to run in parallel (n_jobs)", options=[1, -1]
+    )
+    params = {
+        "split_size": split_size,
+        "parameter_positive": parameter_positive,
+        "parameter_n_jobs": parameter_n_jobs,
+    }
+    return params
 
 
 def RF_hyperparams():
     st.markdown("### Set Parameters")
     split_size = st.sidebar.slider(
-        "Data split ratio (% for Training Set)", 10, 90, 80, 5, key=1
+        "Data split ratio (% for Training Set)", 10, 90, 80, 5
     )
     st.markdown("### Learning Parameters")
     parameter_n_estimators = st.sidebar.slider(
-        "Number of estimators (n_estimators)", 1, 1000, 100, 1, key=2
+        "Number of estimators (n_estimators)", 1, 1000, 100, 1
     )
-    parameter_max_features = st.radio(
-        "Max features (max_features)", options=["sqrt", "log2"], key=3
-    )
+    parameter_max_depth = st.sidebar.slider("Max depth (max_depth)", 1, 100, 1, 1)
     parameter_min_samples_split = st.sidebar.slider(
         "Minimum number of samples required to split an internal node (min_samples_split)",
         2,
         10,
         2,
         1,
-        key=4,
     )
     parameter_min_samples_leaf = st.sidebar.slider(
         "Minimum number of samples required to be at a leaf node (min_samples_leaf)",
@@ -111,16 +172,14 @@ def RF_hyperparams():
         10,
         2,
         1,
-        key=5,
     )
     st.markdown("### General Parameters")
     parameter_random_state = st.sidebar.slider(
-        "Seed number (random_state)", 0, 1000, 42, 1, key=6
+        "Seed number (random_state)", 0, 1000, 42, 1
     )
     parameter_criterion_choose = st.radio(
         "Performance measure (criterion)",
         options=["Mean Squared Error", "Mean Absolute Error"],
-        key=7,
     )
     parameter_criterion = (
         "squared_error"
@@ -128,22 +187,19 @@ def RF_hyperparams():
         else "absolute_error"
     )
     parameter_bootstrap = st.radio(
-        "Bootstrap samples when building trees (bootstrap)",
-        options=[True, False],
-        key=8,
+        "Bootstrap samples when building trees (bootstrap)", options=[True, False]
     )
     parameter_oob_score = st.radio(
         "Whether to use out-of-bag samples to estimate the R^2 on unseen data (oob_score)",
         options=[False, True],
-        key=9,
     )
     parameter_n_jobs = st.radio(
-        "Number of jobs to run in parallel (n_jobs)", options=[1, -1], key=10
+        "Number of jobs to run in parallel (n_jobs)", options=[1, -1]
     )
     params = {
         "split_size": split_size,
         "parameter_n_estimators": parameter_n_estimators,
-        "parameter_max_features": parameter_max_features,
+        "parameter_max_depth": parameter_max_depth,
         "parameter_min_samples_split": parameter_min_samples_split,
         "parameter_min_samples_leaf": parameter_min_samples_leaf,
         "parameter_random_state": parameter_random_state,
@@ -173,18 +229,17 @@ with st.sidebar:
 
 # Displays the dataset
 with tab1:
-    if get_dataset:
-        # Diabetes dataset
-        st.markdown("### Dataset")
-        diabetes = load_diabetes()
-        X = pd.DataFrame(diabetes.data, columns=diabetes.feature_names)
-        Y = pd.Series(diabetes.target, name="response")
-        df = pd.concat([X, Y], axis=1)
+    # Diabetes dataset
+    st.markdown("### Dataset")
+    diabetes = load_diabetes()
+    X = pd.DataFrame(diabetes.data, columns=diabetes.feature_names)
+    Y = pd.Series(diabetes.target, name="response")
+    df = pd.concat([X, Y], axis=1)
 
-        st.markdown("The Diabetes dataset is used as the example.")
-        st.write(df)
+    st.markdown("The Diabetes dataset is used as the example.")
+    st.write(df)
 
-        if model == 1:
-            build_model_LR(df)
-        elif model == 2:
-            build_model_RF(df, RF_params)
+    if model == 1:
+        build_model_LR(df, LR_params)
+    elif model == 2:
+        build_model_RF(df, RF_params)
