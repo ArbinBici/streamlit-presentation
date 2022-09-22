@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import r2_score, mean_absolute_error
 from sklearn.datasets import load_diabetes
 
 # ---------------------------------#
@@ -57,16 +57,16 @@ def build_model_LR(df, params):
         st.markdown("*Coefficient of determination ($R^2$):*")
         st.info(r2_score(Y_train, Y_pred_train))
 
-        st.markdown(f"*Error (Mean Squared Error):*")
-        st.info(mean_squared_error(Y_train, Y_pred_train))
+        st.markdown(f"*Error (Mean Absolute Error):*")
+        st.info(mean_absolute_error(Y_train, Y_pred_train))
 
         st.markdown("#### **Test Set**")
         Y_pred_test = lr.predict(X_test)
         st.markdown("*Coefficient of determination ($R^2$):*")
         st.info(r2_score(Y_test, Y_pred_test))
 
-        st.markdown(f"*Error (Mean Squared Error):*")
-        st.info(mean_squared_error(Y_test, Y_pred_test))
+        st.markdown(f"*Error (Mean Absolute Error):*")
+        st.info(mean_absolute_error(Y_test, Y_pred_test))
     with tab3:
         st.markdown("#### Model Parameters")
         st.write(lr.get_params())
@@ -113,16 +113,16 @@ def build_model_RF(df, params):
         st.markdown("*Coefficient of determination ($R^2$):*")
         st.info(r2_score(Y_train, Y_pred_train))
 
-        st.markdown(f"*Error ({criterion_choose}):*")
-        st.info(mean_squared_error(Y_train, Y_pred_train))
+        st.markdown(f"*Error (Mean Absolute Error):*")
+        st.info(mean_absolute_error(Y_train, Y_pred_train))
 
         st.markdown("#### **Test Set**")
         Y_pred_test = rf.predict(X_test)
         st.markdown("*Coefficient of determination ($R^2$):*")
         st.info(r2_score(Y_test, Y_pred_test))
 
-        st.markdown(f"*Error ({criterion_choose}):*")
-        st.info(mean_squared_error(Y_test, Y_pred_test))
+        st.markdown(f"*Error (Mean Absolute Error):*")
+        st.info(mean_absolute_error(Y_test, Y_pred_test))
     with tab3:
         st.markdown("#### Model Parameters")
         st.write(rf.get_params())
